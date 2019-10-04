@@ -1,2 +1,0 @@
-# ProiectRC
-Proiect Retele Calculatoare
