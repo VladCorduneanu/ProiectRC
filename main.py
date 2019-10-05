@@ -6,7 +6,7 @@ from tkinter import *
 
 def main():
     interface_controller = InterfaceController.get_instance()
-    interface_controller.master = Tk()
+    interface_controller.master = Tk("500x100+300+300")
     # interface_controller.back = Frame(master=interface_controller.master,
     #                                   width=500, height=500, bg='black')
     # interface_controller.back.pack()
