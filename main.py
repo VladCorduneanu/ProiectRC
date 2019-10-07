@@ -6,17 +6,24 @@ from tkinter import *
 
 def main():
     interface_controller = InterfaceController.get_instance()
-    interface_controller.master = Tk("500x100+300+300")
-    # interface_controller.back = Frame(master=interface_controller.master,
-    #                                   width=500, height=500, bg='black')
-    # interface_controller.back.pack()
-    interface_controller.button = Button(interface_controller.master, text="Transfer File",
+    interface_controller.master = Tk()
+    interface_controller.master.geometry("600x800")
+
+    interface_controller.frame = Frame(interface_controller.master, background="lightblue")
+
+    interface_controller.frame.pack(fill="both", expand=True)
+
+
+    interface_controller.button = Button(interface_controller.frame, text="Transfer File",
                                          command=interface_controller.transfer_file)
     interface_controller.button.pack()
-    interface_controller.text_box = Entry(interface_controller.master)
+    interface_controller.text_box = Entry(interface_controller.frame)
     interface_controller.text_box.pack()
 
-    mainloop()
+
+
+    interface_controller.master.mainloop()
+
 
 
 class InterfaceController:
@@ -24,6 +31,7 @@ class InterfaceController:
         self.button = None
         self.text_box = None
         self.master = None
+        self.frame = None
         # self.back = None
         pass
 
