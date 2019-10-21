@@ -1,4 +1,5 @@
 from interface import InterfaceController
+import logger
 
 class StateController:
 
@@ -28,6 +29,7 @@ class StateController:
     def transfer_function(self):
         print("clicked Transfer File")
         input_text = InterfaceController.get_instance().text_box.get()
+        logger.Logger.write("Transfer Function Has Been Triggered:" + input_text)
         try:
             open(input_text, "+w")
         except IOError:

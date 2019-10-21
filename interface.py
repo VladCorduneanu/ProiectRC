@@ -1,5 +1,6 @@
 from tkinter import *
 import controller
+import logger
 
 
 class InterfaceController:
@@ -78,6 +79,7 @@ class InterfaceController:
     @staticmethod
     def change_state():
         controller.StateController.get_instance().change_state_text()
+        logger.Logger.write("State Has Changed")
 
     pass
 
