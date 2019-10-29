@@ -1,6 +1,7 @@
 from interface import InterfaceController
 import logger
 
+
 class StateController:
 
     # Variables
@@ -15,16 +16,6 @@ class StateController:
 
     # Class Methods
 
-    def change_state_text(self):
-        print("clicked Change State!")
-        if self.state == "Transfer":
-            self.state = "Receive"
-        else:
-            self.state = "Transfer"
-
-        InterfaceController.get_instance().SetStateLabelText(self.state)
-
-    pass
 
     def transfer_function(self):
         print("clicked Transfer File")

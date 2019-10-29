@@ -9,7 +9,10 @@ class Logger:
         self.text = ""
 
         if os.path.exists("Logs.txt"):
-            os.remove("Logs.txt")
+            try:
+                os.remove("Logs.txt")
+            except IOError:
+                print("Logger is used by another process")
         else:
             print("The file does not exist")
 

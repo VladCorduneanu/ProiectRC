@@ -1,15 +1,31 @@
 from controller import StateController
 from interface import InterfaceController
 import logger
-
+import sys
 
 def main():
+    # Set state of program
+    if len(sys.argv) != 2:
+        print("The application need exactly one argument: sender or receiver.")
+        return
+    if sys.argv[1] == "sender":
+        print("The application started as sender.")
+        state = "sender"
+    elif sys.argv[1] == "receiver":
+        state = "receiver"
+        print("The application started as receiver.")
+    else:
+        print("The name of argument is incorrect. It must be: sender or receiver.")
+        return
+
     # Start of program
     logger.Logger.write("Program Has Started")
     logger.Logger.flush()
 
     # Interface Controller
     interface_controller = InterfaceController.get_instance()
+    interface_controller.SetInitialState(state)
+    interface_controller.InitInterfaceController()
     logger.Logger.write("Init Interface Controller")
     logger.Logger.flush()
 
@@ -24,7 +40,6 @@ def main():
     interface_controller.get_instance().master.mainloop()
 
     logger.Logger.on_exit()
-
 
 if __name__ == "__main__":
     main()
