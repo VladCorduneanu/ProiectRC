@@ -1,6 +1,3 @@
 .idea/workspace.xml
 venv/
-__pycache__/controller.cpython-37.pyc
-__pycache__/interface.cpython-37.pyc
-__pycache__/logger.cpython-36.pyc
-__pycache__/logger.cpython-37.pyc
+__pycache__/
