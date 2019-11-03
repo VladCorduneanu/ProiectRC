@@ -2,6 +2,8 @@ from controller import StateController
 from interface import InterfaceController
 import logger
 import sys
+import threading
+
 
 def main():
     # Set state of program
@@ -18,14 +20,16 @@ def main():
         print("The name of argument is incorrect. It must be: sender or receiver.")
         return
 
+    print(threading.current_thread().ident)
+
     # Start of program
     logger.Logger.write("Program Has Started")
     logger.Logger.flush()
 
     # Interface Controller
     interface_controller = InterfaceController.get_instance()
-    interface_controller.SetInitialState(state)
-    interface_controller.InitInterfaceController()
+    interface_controller.set_state(state)
+    interface_controller.init_interface_controller()
     logger.Logger.write("Init Interface Controller")
     logger.Logger.flush()
 
@@ -39,7 +43,10 @@ def main():
     logger.Logger.flush()
     interface_controller.get_instance().master.mainloop()
 
+    state_controller.get_instance().kill_thread = True
+
     logger.Logger.on_exit()
+
 
 if __name__ == "__main__":
     main()
