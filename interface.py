@@ -14,7 +14,6 @@ class InterfaceController:
         self.text_box = None
         self.master = None
         self.frame = None
-        self.thread: threading.Thread = threading.Thread()
 
         # Variables
         self.state_label_text = None
@@ -81,10 +80,6 @@ class InterfaceController:
     def set_state(self, state):
         self.state = state
         controller.StateController.get_instance().set_state(state)
-        print(threading.current_thread().ident)
-        self.thread = threading.Thread(target=controller.StateController.thread_starter)
-        print(threading.current_thread().ident)
-        self.thread.start()
 
     def file_dialog(self):
         filename = filedialog.askopenfilename(initialdir="/", title="Select A File",

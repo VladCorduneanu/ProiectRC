@@ -20,8 +20,6 @@ def main():
         print("The name of argument is incorrect. It must be: sender or receiver.")
         return
 
-    print(threading.current_thread().ident)
-
     # Start of program
     logger.Logger.write("Program Has Started")
     logger.Logger.flush()
