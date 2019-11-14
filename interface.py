@@ -1,7 +1,7 @@
 from tkinter import *
 import controller
-import logger
 from tkinter import filedialog
+import threading
 
 
 class InterfaceController:
@@ -19,13 +19,11 @@ class InterfaceController:
         self.state_label_text = None
         self.state = ""
 
-        # Init Variables
-        # TODO INIT
         pass
 
     # Init function
 
-    def InitInterfaceController(self):
+    def init_interface_controller(self):
         # Master
         self.master = Tk()
         self.master.geometry("600x600")
@@ -56,7 +54,7 @@ class InterfaceController:
 
         # Browse Button
         self.browse_button = Button(self.frame, text="Browse",
-                                    command=self.fileDialog)
+                                    command=self.file_dialog)
         self.browse_button.place(x=548, y=36)
 
     pass
@@ -79,10 +77,12 @@ class InterfaceController:
 
     # TODO call State Controller to change the state and give the label what to write
 
-    def SetInitialState(self, state):
+    def set_state(self, state):
         self.state = state
+        controller.StateController.get_instance().set_state(state)
 
-    def fileDialog(self):
-        self.filename = filedialog.askopenfilename(initialdir="/", title="Select A File",
-                                                   filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
-        self.text_box.insert(0,self.filename)
+    def file_dialog(self):
+        filename = filedialog.askopenfilename(initialdir="/", title="Select A File",
+                                              filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
+        self.text_box.insert(0, filename)
+    pass
