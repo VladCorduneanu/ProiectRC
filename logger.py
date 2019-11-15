@@ -1,22 +1,25 @@
 from datetime import datetime
 import os
 
+state = ""
+
 
 class Logger:
 
     # Variables
     def __init__(self):
+        global state
         self.text = ""
-
-        if os.path.exists("Logs.txt"):
+        log_name = "Logs_" + state + ".txt"
+        if os.path.exists(log_name):
             try:
-                os.remove("Logs.txt")
+                os.remove(log_name)
             except IOError:
                 print("Logger is used by another process")
         else:
             print("The file does not exist")
 
-        self.file = open("Logs.txt", "a+")
+        self.file = open(log_name, "a+")
         self.write_to_file()
     pass
 

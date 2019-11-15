@@ -2,3 +2,5 @@
 venv/
 __pycache__/
 Logs.txt
+Logs_sender.txt
+Logs_receiver.txt

@@ -2,7 +2,6 @@ from controller import StateController
 from interface import InterfaceController
 import logger
 import sys
-import threading
 
 
 def main():
@@ -12,13 +11,15 @@ def main():
         return
     if sys.argv[1] == "sender":
         print("The application started as sender.")
-        state = "sender"
+        logger.state = "sender"
     elif sys.argv[1] == "receiver":
-        state = "receiver"
+        logger.state = "receiver"
         print("The application started as receiver.")
     else:
         print("The name of argument is incorrect. It must be: sender or receiver.")
         return
+
+    state=logger.state
 
     # Start of program
     logger.Logger.write("Program Has Started")

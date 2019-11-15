@@ -56,7 +56,7 @@ class InterfaceController:
                                     command=self.file_dialog)
         self.browse_button.place(x=548, y=36)
 
-        self.master.protocol("WM_DELETE_WINDOW", self.closeme)
+        self.master.protocol("WM_DELETE_WINDOW", self.close_me)
 
     pass
 
@@ -89,13 +89,7 @@ class InterfaceController:
 
     pass
 
-    def closeme(self):
-        if controller.StateController.get_instance().receive_thread:
-            controller.StateController.get_instance().kill_thread = True
-
-        if controller.StateController.get_instance().transmit_thread:
-            controller.StateController.get_instance().kill_thread = True
-
-        print(controller.StateController.get_instance().transmit_thread.is_alive())
+    def close_me(self):
+        controller.StateController.get_instance().close_app()
         self.master.destroy()
     pass
