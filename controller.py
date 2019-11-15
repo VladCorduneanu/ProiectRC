@@ -58,8 +58,8 @@ class StateController:
         self.receive_thread.start()
 
         argument = "transmit"
-        self.receive_thread = threading.Thread(target=self.thread_starter, kwargs=dict(mode=argument))
-        self.receive_thread.start()
+        self.transmit_thread = threading.Thread(target=self.thread_starter, kwargs=dict(mode=argument))
+        self.transmit_thread.start()
 
     pass
 
@@ -73,13 +73,17 @@ class StateController:
         sock = socket.socket(socket.AF_INET,  # Internet
                              socket.SOCK_DGRAM)  # UDP
         while not self.kill_thread:
+           # print(self.kill_thread)
             if not self.transmit_buffer.empty():
                 MESSAGE = self.transmit_buffer.get()
                 sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
                 #print("sent message", MESSAGE, "\n")
 
         sock.close()
-        pass
+        print("sunt in sender")
+        print(self.kill_thread)
+
+    pass
 
     def receiver(self):
         if self.state == States.RECEIVER:
@@ -92,6 +96,7 @@ class StateController:
         sock.bind(('', UDP_PORT))
         while not self.kill_thread:
             data = sock.recv(100)
+            sock.settimeout(5.0)
             self.receive_buffer.put(data.decode())
             if data.decode() == "final":
                 finish = False
@@ -107,7 +112,10 @@ class StateController:
             print("received message", data, "\n")
 
         sock.close()
-        pass
+        print("sunt in receiver")
+        print(self.kill_thread)
+
+    pass
 
     @staticmethod
     def thread_starter(mode: str):

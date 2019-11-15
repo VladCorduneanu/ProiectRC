@@ -1,7 +1,6 @@
 from tkinter import *
 import controller
 from tkinter import filedialog
-import threading
 
 
 class InterfaceController:
@@ -57,6 +56,8 @@ class InterfaceController:
                                     command=self.file_dialog)
         self.browse_button.place(x=548, y=36)
 
+        self.master.protocol("WM_DELETE_WINDOW", self.closeme)
+
     pass
 
     # Static instance
@@ -85,4 +86,16 @@ class InterfaceController:
         filename = filedialog.askopenfilename(initialdir="/", title="Select A File",
                                               filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
         self.text_box.insert(0, filename)
+
+    pass
+
+    def closeme(self):
+        if controller.StateController.get_instance().receive_thread:
+            controller.StateController.get_instance().kill_thread = True
+
+        if controller.StateController.get_instance().transmit_thread:
+            controller.StateController.get_instance().kill_thread = True
+
+        print(controller.StateController.get_instance().transmit_thread.is_alive())
+        self.master.destroy()
     pass
