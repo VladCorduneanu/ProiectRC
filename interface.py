@@ -1,6 +1,7 @@
 from tkinter import *
 import controller
 from tkinter import filedialog
+import logger
 
 
 class InterfaceController:
@@ -72,7 +73,13 @@ class InterfaceController:
 
     @staticmethod
     def transfer_file():
-        controller.StateController.get_instance().transfer_function()
+        if logger.state == "sender":
+            controller.StateController.get_instance().transfer_function()
+        elif logger.state == "receiver":
+            controller.StateController.get_instance().receive_function()
+        else:
+            print("Oops, nu trebuia sa se ajunga aici")
+            # de completat
 
     pass
 
@@ -92,4 +99,5 @@ class InterfaceController:
     def close_me(self):
         controller.StateController.get_instance().close_app()
         self.master.destroy()
+
     pass

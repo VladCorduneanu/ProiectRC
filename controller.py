@@ -32,18 +32,62 @@ class StateController:
     # Class Methods
 
     def transfer_function(self):
-        print("clicked Transfer File")
-        input_text = InterfaceController.get_instance().text_box.get()
-        logger.Logger.write("Transfer Function Has Been Triggered:" + input_text)
-        try:
-            file = open(input_text, "r")
-            file_text = file.readlines()
-            self.transmit_buffer.put("inceput")
-            for it in file_text:
-                self.transmit_buffer.put(it)
-            self.transmit_buffer.put("final")
-        except IOError:
-            print("Error: File does not appear to exist.")
+        logger.Logger.write("Transfer function triggered")
+
+        tip = "1"
+        conn_pack = tip
+        logger.Logger.write("Sending connection package")
+        self.transmit_buffer.put(conn_pack)
+        isTransfering = 1
+
+        while isTransfering == 1:
+            if not self.receive_buffer.empty():
+                pack = self.receive_buffer.get()
+                if pack[0] == "2":
+
+                    dim = int(pack[1:])
+
+                    input_text = InterfaceController.get_instance().text_box.get()
+                    logger.Logger.write("Starting transfer of file: " + input_text)
+
+                    file_data = []
+                    packages = []
+                    try:
+                        file = open(input_text, "r")
+
+                        while True:
+                            current_data = file.read(dim)
+                            if current_data == '':
+                                break
+                            file_data.append(current_data)
+                    except IOError:
+                        logger.Logger.write("Error: File does not appear to exist.")
+
+                    tip = "3"
+                    nr_pachet = 0
+                    for it in file_data:
+                        nr_pachet = nr_pachet + 1
+                        current_package = tip + " " + str(nr_pachet) + " " + str(len(it)) + " " + it
+                        packages.append(current_package)
+                    print("da")
+
+    pass
+
+    def receive_function(self):
+        logger.Logger.write("Receive function triggered")
+        isReceving = 1
+        isConnected = 0
+        dim = 64
+        while isReceving == 1:
+            if not self.receive_buffer.empty():
+                pack = self.receive_buffer.get()
+                if pack[0] == "1":
+                    connected_pack = "2" + str(dim)
+                    self.transmit_buffer.put(connected_pack)
+                    isConnected = 1
+                #if isConnected:
+
+
 
     pass
 
@@ -73,11 +117,11 @@ class StateController:
         sock = socket.socket(socket.AF_INET,  # Internet
                              socket.SOCK_DGRAM)  # UDP
         while not self.kill_thread:
-           # print(self.kill_thread)
+            # print(self.kill_thread)
             if not self.transmit_buffer.empty():
-                MESSAGE = self.transmit_buffer.get()
+                MESSAGE : str = self.transmit_buffer.get()
                 sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
-                #print("sent message", MESSAGE, "\n")
+                # print("sent message", MESSAGE, "\n")
 
         sock.close()
 
@@ -96,17 +140,17 @@ class StateController:
         while not self.kill_thread:
             data = sock.recv(100)
             self.receive_buffer.put(data.decode())
-            if data.decode() == "final":
-                finish = False
-                fisier = ""
-                while not finish:
-                    if self.receive_buffer.get() == "inceput":
-                        pack = self.receive_buffer.get()
-                        while pack != "final":
-                            fisier = fisier + pack + "\n"
-                            pack = self.receive_buffer.get()
-                        print(fisier)
-                        finish = True
+            # if data.decode() == "final":
+            #     finish = False
+            #     fisier = ""
+            #     while not finish:
+            #         if self.receive_buffer.get() == "inceput":
+            #             pack = self.receive_buffer.get()
+            #             while pack != "final":
+            #                 fisier = fisier + pack + "\n"
+            #                 pack = self.receive_buffer.get()
+            #             print(fisier)
+            #             finish = True
             print("received message", data, "\n")
 
         sock.close()
