@@ -4,6 +4,16 @@ import enum
 import socket
 import queue
 import threading
+import frame
+
+
+def data_write(data):
+    sir_nou = ""
+    for it in data:
+        if it == '+' or it == '/' or it == '<' or it == '/':
+            sir_nou = sir_nou + '/'
+        sir_nou = sir_nou + it
+    return sir_nou
 
 
 class States(enum.Enum):
@@ -34,60 +44,158 @@ class StateController:
     def transfer_function(self):
         logger.Logger.write("Transfer function triggered")
 
-        tip = "1"
-        conn_pack = tip
+        # citire fisier
+        input_text = InterfaceController.get_instance().text_box.get()
+        logger.Logger.write("Starting transfer of file: " + input_text)
+        current_data=""
+        try:
+            file = open(input_text, "r")
+            current_data = file.read()
+            current_data = data_write(current_data)
+            print("Read File succesfuly")
+        except IOError:
+            logger.Logger.write("Error: File does not appear to exist.")
+            return
+
+        packList = []
+
+        rest = len(current_data) % 64
+        intreg = len(current_data) - rest
+
+        for i in range(0, intreg - 1, 64):
+            packList.append(current_data[i:i + 63])
+
+        if rest > 0:
+            packList.append(current_data[intreg:])
+
+        connpack = frame.Frame()
+        connpack.type = 1
+        connpack.total_number = len(packList)
         logger.Logger.write("Sending connection package")
-        self.transmit_buffer.put(conn_pack)
-        isTransfering = 1
+        self.transmit_buffer.put(connpack.encode_message())
+
+        isConnecting = 1
+        isTransfering = 0
+        isFinished = 0
+
+        isWaiting = 0
+        isSending = 0
+
+        currentPackNumber = 0
+
+        windowDim = 1
+
+        while isConnecting == 1:
+            if not self.receive_buffer.empty():
+
+                data = self.receive_buffer.get()
+                pachet = frame.Frame()
+                pachet.decode_message(data)
+
+                if pachet.type == 2:
+                    windowDim = 1  # TODO
+                    isConnecting = 0
+                    isTransfering = 1
+                    isSending = 1
+                    isWaiting = 0
 
         while isTransfering == 1:
-            if not self.receive_buffer.empty():
-                pack = self.receive_buffer.get()
-                if pack[0] == "2":
+            if isSending == 1:
+                packToSend = frame.Frame()
+                packToSend.type = 3
+                packToSend.frame_number = currentPackNumber
+                packToSend.data = packList[currentPackNumber]
+                packToSend.length = len(packToSend.data)
 
-                    dim = int(pack[1:])
+                logger.Logger.write("Sending data package: " + currentPackNumber.__str__())
+                self.transmit_buffer.put(packToSend.encode_message())
 
-                    input_text = InterfaceController.get_instance().text_box.get()
-                    logger.Logger.write("Starting transfer of file: " + input_text)
+                isSending = 0
+                isWaiting = 1
 
-                    file_data = []
-                    packages = []
-                    try:
-                        file = open(input_text, "r")
+            if isWaiting == 1:
+                if not self.receive_buffer.empty():
 
-                        while True:
-                            current_data = file.read(dim)
-                            if current_data == '':
-                                break
-                            file_data.append(current_data)
-                    except IOError:
-                        logger.Logger.write("Error: File does not appear to exist.")
+                    data = self.receive_buffer.get()
+                    ackPack = frame.Frame()
+                    ackPack.decode_message(data)
 
-                    tip = "3"
-                    nr_pachet = 0
-                    for it in file_data:
-                        nr_pachet = nr_pachet + 1
-                        current_package = tip + " " + str(nr_pachet) + " " + str(len(it)) + " " + it
-                        packages.append(current_package)
-                    print("da")
+                    if ackPack.type == 5:
+                        currentPackNumber = ackPack.frame_number + 1
+
+                        isSending = 1
+                        isWaiting = 0
+            if currentPackNumber == len(packList):
+                isTransfering = 0
+                isFinished = 1
+
+        while isFinished == 1:
+            endPack = frame.Frame()
+            endPack.type = 4
+            logger.Logger.write("Sending end package: ")
+            self.transmit_buffer.put(endPack.encode_message())
+            isFinished=0
 
     pass
 
     def receive_function(self):
         logger.Logger.write("Receive function triggered")
-        isReceving = 1
-        isConnected = 0
-        dim = 64
-        while isReceving == 1:
+        receivedPackList = []
+
+        isListening = 1
+        isReceving = 0
+        isFinished = 0
+
+        isWaiting = 0
+        isSendingAck = 0
+
+        currentPack = 0;
+
+        while isListening == 1:
             if not self.receive_buffer.empty():
-                pack = self.receive_buffer.get()
-                if pack[0] == "1":
-                    connected_pack = "2" + str(dim)
-                    self.transmit_buffer.put(connected_pack)
-                    isConnected = 1
-                #if isConnected:
+                data = self.receive_buffer.get()
+                connPack = frame.Frame()
+                connPack.decode_message(data)
+                if connPack.type == 1:
+                    accConnPack = frame.Frame()
+                    accConnPack.type = 2
+                    accConnPack.window_size = 1  # TODO hardcoding
+                    self.transmit_buffer.put(accConnPack.encode_message())
+                    isListening = 0
+                    isReceving = 1
+                    isWaiting = 1
+                    isSendingAck = 0
+        while isReceving == 1:
+            if isWaiting == 1:
+                if not self.receive_buffer.empty():
+                    data = self.receive_buffer.get()
+                    receivedPack = frame.Frame()
+                    receivedPack.decode_message(data)
+                    if receivedPack.type == 3 and currentPack == receivedPack.frame_number:
+                        receivedPackList.append(receivedPack.data)
+                        currentPack = currentPack + 1
+                        isWaiting = 0
+                        isSendingAck = 1
+                    elif receivedPack.type == 4:
+                        isReceving = 0
+                        isFinished = 1
+                    else:
+                        isSendingAck
+            if isSendingAck == 1:
+                ackPack = frame.Frame()
+                ackPack.type = 5
+                ackPack.frame_number = currentPack - 1
+                ackPack.remaining_space = 1 #TODO hardcoding
+                self.transmit_buffer.put(ackPack.encode_message())
+                isSendingAck=0
+                isWaiting=1
+        while isFinished == 1:
+            print("\n\n\n")
 
+            for it in receivedPackList:
+                print(it)
 
+            isFinished = 0
 
     pass
 
@@ -119,7 +227,7 @@ class StateController:
         while not self.kill_thread:
             # print(self.kill_thread)
             if not self.transmit_buffer.empty():
-                MESSAGE : str = self.transmit_buffer.get()
+                MESSAGE: str = self.transmit_buffer.get()
                 sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
                 # print("sent message", MESSAGE, "\n")
 
