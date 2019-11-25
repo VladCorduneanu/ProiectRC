@@ -68,7 +68,7 @@ class Frame:
             self.length = int(aux)
 
             info = ""
-            for j in (i + 1, self.length-1):
+            for j in range(i + 1, i+self.length+1):
                 info = info + data[j]
             flag: bool = False
             for it in info:

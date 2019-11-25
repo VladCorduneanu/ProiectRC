@@ -10,7 +10,7 @@ import frame
 def data_write(data):
     sir_nou = ""
     for it in data:
-        if it == '+' or it == '/' or it == '<' or it == '/':
+        if it == '+' or it == '>' or it == '<' or it == '/' or it == '~':
             sir_nou = sir_nou + '/'
         sir_nou = sir_nou + it
     return sir_nou
@@ -66,7 +66,7 @@ class StateController:
             packList.append(current_data[i:i + 63])
 
         if rest > 0:
-            packList.append(current_data[intreg:])
+            packList.append(current_data[intreg-1:])
 
         connpack = frame.Frame()
         connpack.type = 1
@@ -193,8 +193,8 @@ class StateController:
             print("\n\n\n")
 
             for it in receivedPackList:
-                print(it)
-
+                print(it, end="")
+            print("")
             isFinished = 0
 
     pass
