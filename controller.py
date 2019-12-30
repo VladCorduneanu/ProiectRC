@@ -86,6 +86,9 @@ class StateController:
         # initializare numar pachet trimis
         currentPackNumber = 0
 
+        #initializare numar pachet primit
+        currentReceivedPack = -1
+
         windowDim = 1
 
         while isConnecting == 1:
@@ -98,7 +101,7 @@ class StateController:
 
                 # verificare pachet de conectare reusita si primire dimensiune fereastra
                 if pachet.type == 2:
-                    windowDim = 1  # TODO
+                    windowDim = pachet.window_size     #1  # TODO
                     isConnecting = 0
                     isTransfering = 1
                     isSending = 1
@@ -119,9 +122,13 @@ class StateController:
                 logger.Logger.write("Sending data package: " + currentPackNumber.__str__())
                 self.transmit_buffer.put(packToSend.encode_message())
 
+                #update pachet curent trimis
+                currentPackNumber = currentPackNumber + 1
+
                 # schimbare stare
-                isSending = 0
-                isWaiting = 1
+                if (currentPackNumber-currentReceivedPack) <= (windowDim + 1):
+                    isSending = 0
+                    isWaiting = 1
 
             # asteptare confirmare pentru pachet curent
             if isWaiting == 1:
