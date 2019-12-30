@@ -1,4 +1,3 @@
-
 class Frame:
     def __init__(self):
         self.type: int = 0
@@ -7,13 +6,14 @@ class Frame:
         self.data: str = ""
         self.frame_number: int = 0
         self.total_number: int = 0
-        self.remaining_space =0
+        self.remaining_space = 0
+
     pass
 
     # EOF = >
     # SOF = <
     # escape = /
-    # spcial ch for spacing = +
+    # special ch for spacing = +
     # end of transmission = ~
     # "/" =//   "<"= /<  ">"=/>  "+"=/+
 
@@ -60,15 +60,15 @@ class Frame:
                 aux = aux + data[i]
                 i = i + 1
             self.frame_number = int(aux)
-            i= i + 1
-            aux=""
+            i = i + 1
+            aux = ""
             while data[i] != '+':
                 aux = aux + data[i]
                 i = i + 1
             self.length = int(aux)
 
             info = ""
-            for j in range(i + 1, i+self.length+1):
+            for j in range(i + 1, i + self.length + 1):
                 info = info + data[j]
             flag: bool = False
             for it in info:
@@ -81,9 +81,9 @@ class Frame:
                     flag = True
                     continue
 
-                if it == "+" or it == "<" or it== ">" or it == "~":
+                if it == "+" or it == "<" or it == ">" or it == "~":
                     print("Eroare la caractere")
-                    self.type=0
+                    self.type = 0
                     return
 
                 self.data = self.data + it
