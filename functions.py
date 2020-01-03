@@ -1,8 +1,10 @@
+import datetime
 import random
 import logger
 from interface import InterfaceController
 
 
+# encode function for data
 def data_write(data):
     sir_nou = ""
     for it in data:
@@ -12,10 +14,12 @@ def data_write(data):
     return sir_nou
 
 
+# generate processing time function
 def genTp():
     return random.random() * 6
 
 
+# generating window size function
 def genWindow(elapsed_time):
     if elapsed_time < 1.5:
         return 5
@@ -29,6 +33,7 @@ def genWindow(elapsed_time):
         return 1
 
 
+# generating time for lost package
 def getLost(percent):
     var = 100 * random.random()
     if var <= percent:
@@ -38,22 +43,22 @@ def getLost(percent):
 
 
 def getPackagesToSend():
-    # citire fisier
+    logger.Logger.write("Writing file...")
+
     input_text = InterfaceController.get_instance().text_box.get()
-    logger.Logger.write("Starting transfer of file: " + input_text)
     current_data = ""
     try:
         file = open(input_text, "r")
         current_data = file.read()
         current_data = data_write(current_data)
-        print("Read File succesfuly")
+        logger.Logger.write("Read File successful")
     except IOError:
         logger.Logger.write("Error: File does not appear to exist.")
         return None
 
     packList = []
 
-    # stablirie numar pachete
+    # establish the number of packages
     rest = len(current_data) % 64
     intreg = len(current_data) - rest
 
@@ -62,5 +67,6 @@ def getPackagesToSend():
 
     if rest > 0:
         packList.append(current_data[intreg - 1:])
-    # returnarea pachete
+
+    # return packages
     return packList

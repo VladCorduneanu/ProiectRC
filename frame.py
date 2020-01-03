@@ -22,31 +22,25 @@ class Frame:
         message = message + self.type.__str__()
 
         if self.type == 1:
-            # pachet de conectare cu numarul total de pachete de date care se vor trimite
+            # connection package with total number of packages to send
             message = message + self.total_number.__str__()
-        elif self.type == 2:
-            # pachet de conectare reusita  cu dimensiunea initiala a window-ului
-            message = message + "+" + self.window_size.__str__()
         elif self.type == 3:
-            # pachet cu informatie
+            # connection package with information from file
             message = message + "+" + self.frame_number.__str__() + "+" + self.length.__str__() + "+" + self.data
         elif self.type == 4:
-            # pachet de final transmisie
+            # end connection package
             message = message + "+" + "~"
         elif self.type == 5:
-            # pachet pentru ack
+            # ack connection
             message = message + "+" + self.frame_number.__str__() + "+" + self.window_size.__str__()
         else:
-            print("Nu trebuie sa ajunga aici")
-            # de completat
+            print("Error")
         message = message + ">"
         return message
 
     def decode_message(self, data):
-        # verificare sof and eof
         if data[0] != "<" and data[len(data) - 1 == ">"]:
-            print(" mesaj prost " + data)
-            # pachet eronat
+            print("bad message " + data)
         self.type = int(data[1])
         if self.type == 1:
             self.total_number = int(data[2:len(data) - 1])
@@ -82,13 +76,13 @@ class Frame:
                     continue
 
                 if it == "+" or it == "<" or it == ">" or it == "~":
-                    print("Eroare la caractere")
+                    print("Error -> Characters error")
                     self.type = 0
                     return
 
                 self.data = self.data + it
         elif self.type == 4:
-            print("final de transmisie")
+            print("Final package")
         elif self.type == 5:
             aux = ""
             i = 3
