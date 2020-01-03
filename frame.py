@@ -6,7 +6,6 @@ class Frame:
         self.data: str = ""
         self.frame_number: int = 0
         self.total_number: int = 0
-        #self.remaining_space = 0
 
     pass
 

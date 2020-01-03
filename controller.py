@@ -1,4 +1,3 @@
-from interface import InterfaceController
 import logger
 import enum
 import socket
@@ -8,15 +7,7 @@ import frame
 import time
 import datetime
 import functions
-
-
-def data_write(data):
-    sir_nou = ""
-    for it in data:
-        if it == '+' or it == '>' or it == '<' or it == '/' or it == '~':
-            sir_nou = sir_nou + '/'
-        sir_nou = sir_nou + it
-    return sir_nou
+import PackageFactory
 
 
 class States(enum.Enum):
@@ -35,6 +26,7 @@ class StateController:
         self.transmit_thread: threading.Thread = threading.Thread()
 
         self.kill_thread = False
+        self.frameFactory = PackageFactory.PackageFacatory()
 
     pass
 
@@ -47,37 +39,18 @@ class StateController:
     def transfer_function(self):
         logger.Logger.write("Transfer function triggered")
 
-        # citire fisier
-        input_text = InterfaceController.get_instance().text_box.get()
-        logger.Logger.write("Starting transfer of file: " + input_text)
-        current_data = ""
-        try:
-            file = open(input_text, "r")
-            current_data = file.read()
-            current_data = data_write(current_data)
-            print("Read File succesfuly")
-        except IOError:
-            logger.Logger.write("Error: File does not appear to exist.")
+        #   text to transfer
+        packList:  [] = functions.getPackagesToSend()
+
+        if packList == None:
             return
 
-        packList = []
-
-        # stablirie numar pachete
-        rest = len(current_data) % 64
-        intreg = len(current_data) - rest
-
-        for i in range(0, intreg - 1, 64):
-            packList.append(current_data[i:i + 63])
-
-        if rest > 0:
-            packList.append(current_data[intreg - 1:])
-
         # trimitere pachet de conectare care contine numarul de pachete al fisierului ce va fi trimis
-        connpack = frame.Frame()
-        connpack.type = 1
-        connpack.total_number = len(packList)
-        print(len(packList))
+        totalPacks = len(packList)
+        connpack = self.frameFactory.getPackage("connect", totalPacks, None, None, None)
+
         logger.Logger.write("Sending connection package")
+        print("Sending conn pack")
         self.transmit_buffer.put(connpack.encode_message())
 
         # starile pentru transmiterea fisierului
@@ -99,7 +72,10 @@ class StateController:
 
         # inceperea conectarii intre sender si receiver
         while isConnecting == 1:
-
+            if (datetime.datetime.now() - lastResponse).total_seconds() > 5:
+                self.transmit_buffer.put(connpack.encode_message())
+                print("Sending conn pack")
+                lastResponse = datetime.datetime.now()
             # asteptare raspuns pentru pachet de conectare
             if not self.receive_buffer.empty():
 
@@ -108,7 +84,7 @@ class StateController:
                 pachet.decode_message(data)
 
                 # verificare pachet de conectare reusita si primire dimensiune fereastra
-                if pachet.type == 2:
+                if pachet.type == 5:
                     lastResponse = datetime.datetime.now()
                     windowDim = pachet.window_size
                     isConnecting = 0
@@ -127,11 +103,8 @@ class StateController:
             # trimitire pachete
             if isSending == 1:
                 # creare pachet
-                packToSend = frame.Frame()
-                packToSend.type = 3
-                packToSend.frame_number = currentPackNumber
-                packToSend.data = packList[currentPackNumber - 1]
-                packToSend.length = len(packToSend.data)
+                packToSend = self.frameFactory.getPackage("data", None, None, currentPackNumber,
+                                                     packList[currentPackNumber - 1])
 
                 # transmitere
                 logger.Logger.write("Sending data package: " + currentPackNumber.__str__())
@@ -189,8 +162,7 @@ class StateController:
         # transmitere pachet de end in caz de terminare transfer
         while isFinished == 1:
             print("Sender: Transmit pachetul de finish ")
-            endPack = frame.Frame()
-            endPack.type = 4
+            endPack = self.frameFactory.getPackage("final",None,None,None,None)
             logger.Logger.write("Sending end package: ")
             self.transmit_buffer.put(endPack.encode_message())
             isFinished = 0
@@ -212,6 +184,8 @@ class StateController:
         # initializare numar pachet primit
         currentPack = 1
 
+        windowDim = 5
+
         # asteptare pachet de conectare
         while isListening == 1:
             if not self.receive_buffer.empty():
@@ -223,11 +197,11 @@ class StateController:
                 # verificare pachet primit
                 if connPack.type == 1:
                     # transmitere pachet conectare reusita si dimnesiunea ferestrei
-                    accConnPack = frame.Frame()
-                    accConnPack.type = 2
-                    accConnPack.window_size = 5
-                    self.transmit_buffer.put(accConnPack.encode_message())
 
+                    accConnPack = self.frameFactory.getPackage("ack",None,windowDim,0,None)
+
+                    self.transmit_buffer.put(accConnPack.encode_message())
+                    print("Receiver: Sending conn pack")
                     # schimbare stare
                     isListening = 0
                     isReceving = 1
@@ -251,13 +225,11 @@ class StateController:
                         print("Receiver Prelucrez...")
                         currentPack = currentPack + 1
 
-                        # TODO pornim cronometru
                         currentTime = datetime.datetime.now()
 
                         # generare timp de prelucrare
                         time.sleep(functions.genTp())
 
-                        # TODO oprim cronometru
                         elapsedTime = (datetime.datetime.now() - currentTime).total_seconds()
 
                         # calculare dimensiune fereastra
@@ -280,11 +252,8 @@ class StateController:
             # trimitrea ack pentru pachet receptionat
             if isSendingAck == 1:
                 # creare pachet
-                ackPack = frame.Frame()
-                ackPack.type = 5
-                ackPack.frame_number = currentPack - 1
-                ackPack.window_size = windowDim
-                print("Receiver: trimtit ack pentru pachetul: " + currentPack.__str__())
+                ackPack = self.frameFactory.getPackage("ack",None,windowDim,currentPack -1,None)
+                print("Receiver: trimtit ack pentru pachetul: " + (currentPack - 1).__str__())
                 self.transmit_buffer.put(ackPack.encode_message())
                 # schimbare stare
                 isSendingAck = 0
@@ -337,7 +306,7 @@ class StateController:
             if not self.transmit_buffer.empty():
                 MESSAGE: str = self.transmit_buffer.get()
 
-                lost = functions.getLost(20)
+                lost = functions.getLost(0)
 
                 if not lost:
                     sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
@@ -348,8 +317,6 @@ class StateController:
                     print(
                         'S-a pierdut la transmisie pachetul cu tipul:' + ackPack.type.__str__() +
                         'si numarul: ' + ackPack.frame_number.__str__())
-
-                # print("sent message", MESSAGE, "\n")
 
         sock.close()
 
@@ -368,19 +335,6 @@ class StateController:
         while not self.kill_thread:
             data = sock.recv(100)
             self.receive_buffer.put(data.decode())
-            # if data.decode() == "final":
-            #     finish = False
-            #     fisier = ""
-            #     while not finish:
-            #         if self.receive_buffer.get() == "inceput":
-            #             pack = self.receive_buffer.get()
-            #             while pack != "final":
-            #                 fisier = fisier + pack + "\n"
-            #                 pack = self.receive_buffer.get()
-            #             print(fisier)
-            #             finish = True
-            # print("received message", data, "\n")
-
         sock.close()
 
     pass

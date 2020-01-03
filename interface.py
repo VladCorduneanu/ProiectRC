@@ -48,14 +48,15 @@ class InterfaceController:
                                       command=self.transfer_file)
         self.transfer_button.place(x=270, y=5)
 
-        # Text Box for file path
-        self.text_box = Entry(self.frame, width=90)
-        self.text_box.place(x=0, y=40)
+        if self.state == "sender":
+            # Text Box for file path
+            self.text_box = Entry(self.frame, width=90)
+            self.text_box.place(x=0, y=40)
 
-        # Browse Button
-        self.browse_button = Button(self.frame, text="Browse",
-                                    command=self.file_dialog)
-        self.browse_button.place(x=548, y=36)
+            # Browse Button
+            self.browse_button = Button(self.frame, text="Browse",
+                                        command=self.file_dialog)
+            self.browse_button.place(x=548, y=36)
 
         self.master.protocol("WM_DELETE_WINDOW", self.close_me)
 
