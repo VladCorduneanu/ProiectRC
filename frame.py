@@ -50,6 +50,7 @@ class Frame:
             # pachet eronat
         self.type = int(data[1])
         if self.type == 1:
+            self.total_number = int(data[2:len(data) - 1])
             return
         elif self.type == 2:
             self.window_size = int(data[3:len(data) - 1])

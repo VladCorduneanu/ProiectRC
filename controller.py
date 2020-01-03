@@ -6,7 +6,10 @@ import queue
 import threading
 import frame
 import time
+import datetime
 import functions
+
+
 def data_write(data):
     sir_nou = ""
     for it in data:
@@ -73,6 +76,7 @@ class StateController:
         connpack = frame.Frame()
         connpack.type = 1
         connpack.total_number = len(packList)
+        print(len(packList))
         logger.Logger.write("Sending connection package")
         self.transmit_buffer.put(connpack.encode_message())
 
@@ -82,6 +86,9 @@ class StateController:
         isFinished = 0
         isWaiting = 0
         isSending = 0
+
+        # timer timeout
+        lastResponse = datetime.datetime.now()
 
         # initializare numar pachet trimis
         currentPackNumber = 1
@@ -102,6 +109,7 @@ class StateController:
 
                 # verificare pachet de conectare reusita si primire dimensiune fereastra
                 if pachet.type == 2:
+                    lastResponse = datetime.datetime.now()
                     windowDim = pachet.window_size
                     isConnecting = 0
                     isTransfering = 1
@@ -110,13 +118,19 @@ class StateController:
 
         # inceperea transferului de pachete ce contin datele fisierului
         while isTransfering == 1:
+            # schimbare stare
+            buffer_size = currentPackNumber - currentReceivedPack
+            if buffer_size - 1 >= windowDim or currentPackNumber > len(packList):
+                isSending = 0
+                isWaiting = 1
+
             # trimitire pachete
             if isSending == 1:
                 # creare pachet
                 packToSend = frame.Frame()
                 packToSend.type = 3
                 packToSend.frame_number = currentPackNumber
-                packToSend.data = packList[currentPackNumber-1]
+                packToSend.data = packList[currentPackNumber - 1]
                 packToSend.length = len(packToSend.data)
 
                 # transmitere
@@ -129,6 +143,7 @@ class StateController:
                 # verificare sosire pachet
                 if not self.receive_buffer.empty():
 
+                    lastResponse = datetime.datetime.now()
                     # decodare mesaj primit
                     data = self.receive_buffer.get()
                     ackPack = frame.Frame()
@@ -136,27 +151,20 @@ class StateController:
 
                     # verificare confirmare
                     if ackPack.type == 5:
-                        currentReceivedPack = currentReceivedPack + 1
-                        print("Sender: Am primit pachetul numarul: " + currentReceivedPack)
+                        currentReceivedPack = ackPack.frame_number
+                        print("Sender: Am primit pachetul numarul: " + str(currentReceivedPack))
                         windowDim = ackPack.window_size
 
-                # verificare finalizare transfer
-                if currentPackNumber - 1 == len(packList):
-                        isTransfering = 0
-                        isFinished = 1
-
-                # schimbare stare
-                buffer_size = currentPackNumber - currentReceivedPack
-                if buffer_size - 1 == windowDim:
-                    isSending = 0
-                    isWaiting = 1
-                    print("Sender: Buffer plin, intru in asteptare pt ack: ")
+            # verificare finalizare transfer
+            if currentReceivedPack == len(packList):
+                isTransfering = 0
+                isFinished = 1
 
             # asteptare confirmare pachet
             if isWaiting == 1:
                 # verificare sosire pachet
                 if not self.receive_buffer.empty():
-
+                    lastResponse = datetime.datetime.now()
                     # decodare mesaj primit
                     data = self.receive_buffer.get()
                     ackPack = frame.Frame()
@@ -164,37 +172,28 @@ class StateController:
 
                     # verificare confirmare
                     if ackPack.type == 5:
-                        currentReceivedPack = currentReceivedPack + 1
+                        currentReceivedPack = ackPack.frame_number
                         windowDim = ackPack.window_size
                         isSending = 1
                         isWaiting = 0
-                        print("Sender: Am primit un ack, pot transmite iar, pachet primit: " + ackPack.frame_number.__str__())
-
+                        print(
+                            "Sender: Am primit un ack, pot transmite iar, pachet primit: " + ackPack.frame_number.__str__() + "windowSize " + windowDim.__str__())
+                else:
+                    if (datetime.datetime.now() - lastResponse).total_seconds() > 15:
+                        lastResponse = datetime.datetime.now()
+                        print("TIMEOUT!!!")
+                        isWaiting = 0
+                        isSending = 1
+                        currentPackNumber = currentReceivedPack + 1
 
         # transmitere pachet de end in caz de terminare transfer
         while isFinished == 1:
-            #verficare buffer plin
-            if isWaiting == 1:
-                print("Sender: Buffer e plin si astept sa pot transmite pachetul de finish ")
-                # verificare sosire pachet
-                if not self.receive_buffer.empty():
-
-                    # decodare mesaj primit
-                    data = self.receive_buffer.get()
-                    ackPack = frame.Frame()
-                    ackPack.decode_message(data)
-
-                    # verificare confirmare
-                    if ackPack.type == 5:
-                        currentReceivedPack = currentReceivedPack + 1
-                        isWaiting = 0
-            else:
-                print("Sender: Transmit pachetul de finish ")
-                endPack = frame.Frame()
-                endPack.type = 4
-                logger.Logger.write("Sending end package: ")
-                self.transmit_buffer.put(endPack.encode_message())
-                isFinished = 0
+            print("Sender: Transmit pachetul de finish ")
+            endPack = frame.Frame()
+            endPack.type = 4
+            logger.Logger.write("Sending end package: ")
+            self.transmit_buffer.put(endPack.encode_message())
+            isFinished = 0
 
     pass
 
@@ -208,9 +207,10 @@ class StateController:
         isFinished = 0
         isWaiting = 0
         isSendingAck = 0
+        length = 0
 
         # initializare numar pachet primit
-        currentPack = 0;
+        currentPack = 1
 
         # asteptare pachet de conectare
         while isListening == 1:
@@ -218,6 +218,7 @@ class StateController:
                 data = self.receive_buffer.get()
                 connPack = frame.Frame()
                 connPack.decode_message(data)
+                length = connPack.total_number
 
                 # verificare pachet primit
                 if connPack.type == 1:
@@ -241,35 +242,48 @@ class StateController:
                     data = self.receive_buffer.get()
                     receivedPack = frame.Frame()
                     receivedPack.decode_message(data)
-
+                    print(length)
                     # verificare tip pachet si numar pachet trimis
-                    if receivedPack.type == 3 and currentPack == receivedPack.frame_number-1:
+                    if receivedPack.type == 3 and currentPack == receivedPack.frame_number:
                         receivedPackList.append(receivedPack.data)
-                        currentPack = currentPack + 1
-                        print("Receiver am primit un pachet corect si ii generez timp de prelucrare, pachetu: " + currentPack.__str__())
+                        print(
+                            "Receiver am primit un pachet corect si ii generez timp de prelucrare, pachetu: " + currentPack.__str__())
                         print("Receiver Prelucrez...")
-                        #generare timp de prelucrare
+                        currentPack = currentPack + 1
+
+                        # TODO pornim cronometru
+                        currentTime = datetime.datetime.now()
+
+                        # generare timp de prelucrare
                         time.sleep(functions.genTp())
+
+                        # TODO oprim cronometru
+                        elapsedTime = (datetime.datetime.now() - currentTime).total_seconds()
+
+                        # calculare dimensiune fereastra
+                        windowDim = functions.genWindow(elapsedTime)
 
                         # pachet trimis corect, trimitere ack
                         print("Receiver Am terminar prelucrarea si vreau sa trimit ack")
                         isWaiting = 0
                         isSendingAck = 1
-                    elif receivedPack.type == 4:
+                    elif receivedPack.type == 4 or length == currentPack - 1:
                         print("Receiver: Am receptionat pachetul final")
                         # schimbare stare: pachet final receptionat
                         isReceving = 0
                         isFinished = 1
+                        isSendingAck = 1
                     else:
                         isWaiting = 0
                         isSendingAck = 1
-            # trimitrea ack pentru pachet receptionat corect
+
+            # trimitrea ack pentru pachet receptionat
             if isSendingAck == 1:
                 # creare pachet
                 ackPack = frame.Frame()
                 ackPack.type = 5
                 ackPack.frame_number = currentPack - 1
-                ackPack.window_size = 5
+                ackPack.window_size = windowDim
                 print("Receiver: trimtit ack pentru pachetul: " + currentPack.__str__())
                 self.transmit_buffer.put(ackPack.encode_message())
                 # schimbare stare
@@ -278,13 +292,17 @@ class StateController:
 
         # stare terminare transfer
         while isFinished == 1:
-            print("Receiver: am primti pachetul final")
+            if length == currentPack - 1:
+                print('Transfer reusit!!!')
+            else:
+                print("Receiver: am primti pachetul de final -NEREUSIT")
             # afisare pachete transmise
 
             print("\n\n\n\t\t\t\t\tMESAJE DECODATE")
             for it in receivedPackList:
                 print(it, end="")
             print("")
+
             isFinished = 0
 
     pass
@@ -318,7 +336,19 @@ class StateController:
             # print(self.kill_thread)
             if not self.transmit_buffer.empty():
                 MESSAGE: str = self.transmit_buffer.get()
-                sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
+
+                lost = functions.getLost(20)
+
+                if not lost:
+                    sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
+                else:
+                    ackPack = frame.Frame()
+                    ackPack.decode_message(MESSAGE)
+
+                    print(
+                        'S-a pierdut la transmisie pachetul cu tipul:' + ackPack.type.__str__() +
+                        'si numarul: ' + ackPack.frame_number.__str__())
+
                 # print("sent message", MESSAGE, "\n")
 
         sock.close()
@@ -349,7 +379,7 @@ class StateController:
             #                 pack = self.receive_buffer.get()
             #             print(fisier)
             #             finish = True
-            print("received message", data, "\n")
+            # print("received message", data, "\n")
 
         sock.close()
 

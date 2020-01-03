@@ -78,12 +78,10 @@ class InterfaceController:
         elif logger.state == "receiver":
             controller.StateController.get_instance().receive_function()
         else:
-            print("Oops, nu trebuia sa se ajunga aici")
+            print("Undifined State: " + logger.state)
             # de completat
 
     pass
-
-    # TODO call State Controller to change the state and give the label what to write
 
     def set_state(self, state):
         self.state = state
