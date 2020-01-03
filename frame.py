@@ -6,7 +6,7 @@ class Frame:
         self.data: str = ""
         self.frame_number: int = 0
         self.total_number: int = 0
-        self.remaining_space = 0
+        #self.remaining_space = 0
 
     pass
 
@@ -36,7 +36,7 @@ class Frame:
             message = message + "+" + "~"
         elif self.type == 5:
             # pachet pentru ack
-            message = message + "+" + self.frame_number.__str__() + "+" + self.remaining_space.__str__()
+            message = message + "+" + self.frame_number.__str__() + "+" + self.window_size.__str__()
         else:
             print("Nu trebuie sa ajunga aici")
             # de completat
@@ -101,4 +101,4 @@ class Frame:
             while data[i] != '>':
                 aux = aux + data[i]
                 i = i + 1
-            self.remaining_space = int(aux)
+            self.window_size = int(aux)
