@@ -19,10 +19,10 @@ def main():
         print("The name of argument is incorrect. It must be: sender or receiver.")
         return
 
-    state=logger.state
+    state = logger.state
 
     # Start of program
-    logger.Logger.write("Program Has Started")
+    logger.Logger.write("Program Has Started as " + logger.state)
     logger.Logger.flush()
 
     # Interface Controller

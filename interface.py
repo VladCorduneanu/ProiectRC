@@ -48,15 +48,17 @@ class InterfaceController:
                                       command=self.transfer_file)
         self.transfer_button.place(x=270, y=5)
 
-        # Text Box for file path
-        self.text_box = Entry(self.frame, width=90)
-        self.text_box.place(x=0, y=40)
+        if self.state == "sender":
+            # Text Box for file path
+            self.text_box = Entry(self.frame, width=90)
+            self.text_box.place(x=0, y=40)
 
-        # Browse Button
-        self.browse_button = Button(self.frame, text="Browse",
-                                    command=self.file_dialog)
-        self.browse_button.place(x=548, y=36)
+            # Browse Button
+            self.browse_button = Button(self.frame, text="Browse",
+                                        command=self.file_dialog)
+            self.browse_button.place(x=548, y=36)
 
+        # exit call
         self.master.protocol("WM_DELETE_WINDOW", self.close_me)
 
     pass
@@ -65,12 +67,15 @@ class InterfaceController:
     instance = None
 
     # Static Methods
+
+    # singleton method for interface
     @staticmethod
     def get_instance():
         if InterfaceController.instance is None:
             InterfaceController.instance = InterfaceController()
         return InterfaceController.instance
 
+    # the method that trigger the transfer button -> transfer button callback
     @staticmethod
     def transfer_file():
         if logger.state == "sender":
@@ -78,17 +83,16 @@ class InterfaceController:
         elif logger.state == "receiver":
             controller.StateController.get_instance().receive_function()
         else:
-            print("Oops, nu trebuia sa se ajunga aici")
-            # de completat
-
+            print("The state doesn't exist")
+            return
     pass
 
-    # TODO call State Controller to change the state and give the label what to write
-
+    # setter for state
     def set_state(self, state):
         self.state = state
         controller.StateController.get_instance().set_state(state)
 
+    # brows file method -> browse button callback
     def file_dialog(self):
         filename = filedialog.askopenfilename(initialdir="/", title="Select A File",
                                               filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
@@ -96,6 +100,7 @@ class InterfaceController:
 
     pass
 
+    # method that close the app from interface -> quit callback
     def close_me(self):
         controller.StateController.get_instance().close_app()
         self.master.destroy()
