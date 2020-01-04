@@ -2,6 +2,7 @@ from tkinter import *
 import controller
 from tkinter import filedialog
 import logger
+import threading
 
 
 class InterfaceController:
@@ -22,6 +23,7 @@ class InterfaceController:
         # Variables
         self.state_label_text = None
         self.state = ""
+        self.working_thread = None
 
         pass
 
@@ -94,6 +96,13 @@ class InterfaceController:
     # the method that trigger the transfer button -> transfer button callback
     @staticmethod
     def transfer_file():
+        InterfaceController.get_instance().working_thread = threading.\
+            Thread(target=InterfaceController.get_instance().transfer_file_thread)
+        InterfaceController.get_instance().working_thread.start()
+    pass
+
+    @staticmethod
+    def transfer_file_thread():
         if logger.state == "sender":
             controller.StateController.get_instance().transfer_function()
         elif logger.state == "receiver":
@@ -119,6 +128,7 @@ class InterfaceController:
 
     # method that close the app from interface -> quit callback
     def close_me(self):
+        self.working_thread.join()
         controller.StateController.get_instance().close_app()
         self.master.destroy()
 

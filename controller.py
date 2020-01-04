@@ -335,7 +335,6 @@ class StateController:
 
             # generating ack for current package
             if isSendingAck == 1:
-
                 # create and send ack package
                 ackPack = self.frameFactory.getPackage(FrameTypes.ACKNOWLEDGE.value,
                                                        None, windowDim, currentPack - 1, None)
@@ -365,40 +364,52 @@ class StateController:
     pass
 
     def set_state(self, state):
+        # Setting the controller state
         if state == "sender":
             self.state = States.SENDER
         else:
             self.state = States.RECEIVER
 
+        # Starting the thread that will receive messages from the other instance
         argument = "receive"
         self.receive_thread = threading.Thread(target=self.thread_starter, kwargs=dict(mode=argument))
         self.receive_thread.start()
 
+        # Starting the thread that will send messages to the other instance
         argument = "transmit"
         self.transmit_thread = threading.Thread(target=self.thread_starter, kwargs=dict(mode=argument))
         self.transmit_thread.start()
 
     pass
 
+    # UDP layer for sending messages
     def sender(self):
+        # Setting localhost IP
         UDP_IP = "127.0.0.1"
-        if self.state == States.RECEIVER:
-            UDP_PORT = 5005
-        else:
-            UDP_PORT = 5006
 
+        if self.state == States.RECEIVER:
+            UDP_PORT = 5005  # Port Receiver-Sender
+        else:
+            UDP_PORT = 5006  # Port Sender-Receiver
+
+        # Configuring socket for UDP transmission
         sock = socket.socket(socket.AF_INET,  # Internet
                              socket.SOCK_DGRAM)  # UDP
+
+        # Main loop for module
         while not self.kill_thread:
 
             if not self.transmit_buffer.empty():
                 MESSAGE: str = self.transmit_buffer.get()
 
+                # Simulating the loss of packages argument being the chance of loss in %
                 lost = functions.getLost(10)
 
                 if not lost:
+                    # Sending the package
                     sock.sendto(MESSAGE.encode(), (UDP_IP, UDP_PORT))
                 else:
+                    # Giving log about loss of package
                     ackPack = frame.Frame()
                     ackPack.decode_message(MESSAGE)
                     logger.Logger.write("Package lost: " + "type: " + ackPack.type.__str__() + " number: "
@@ -408,24 +419,27 @@ class StateController:
 
     pass
 
+    # UDP layer for receiving messages
     def receiver(self):
         if self.state == States.RECEIVER:
-            UDP_PORT = 5006
+            UDP_PORT = 5006  # Port Sender-Receiver
         else:
-            UDP_PORT = 5005
+            UDP_PORT = 5005  # Port Receiver-Sender
 
+        # Configuring socket for UDP
         sock = socket.socket(socket.AF_INET,  # Internet
                              socket.SOCK_DGRAM)  # UDP
         sock.bind(('', UDP_PORT))
 
         while not self.kill_thread:
-            data = sock.recv(100)
+            data = sock.recv(100)  # Maximum size of package in bytes
             self.receive_buffer.put(data.decode())
         sock.close()
 
     pass
 
     def close_app(self):
+        # Killing receive thread
         if StateController.get_instance().receive_thread:
             StateController.get_instance().kill_thread = True
             if self.state == States.RECEIVER:
@@ -436,10 +450,14 @@ class StateController:
             sock = socket.socket(socket.AF_INET,  # Internet
                                  socket.SOCK_DGRAM)  # UDP
             sock.bind(('', 5007))
+            # Sending pack to take the receive thread from waiting and letting the thread kill itself
             string = "closing"
             UDP_IP = "127.0.0.1"
             sock.sendto(string.encode(), (UDP_IP, UDP_PORT))
 
+            sock.close()
+
+        # Killing transmit thread(non blocking functions, only setting the variable)
         if StateController.get_instance().transmit_thread:
             StateController.get_instance().kill_thread = True
 
