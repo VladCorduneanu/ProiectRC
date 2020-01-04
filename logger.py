@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import interface
+import threading
 import tkinter as tk
 
 state = ""
@@ -12,6 +13,7 @@ class Logger:
     def __init__(self):
         global state
         self.text = ""
+        self.mutex = threading.Lock()
         log_name = "Logs_" + state + ".txt"
         if os.path.exists(log_name):
             try:
@@ -34,13 +36,17 @@ class Logger:
 
     def write_log(self, received_text):
         # datetime object containing current date and time
+        self.mutex.acquire()
+
+        print(received_text)
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S:%f")
         dt_string = "[" + dt_string + "]  "
         self.text = self.text + "\n" + dt_string + received_text
-        if len(self.text) >= 100:
-            self.write_to_file()
-        pass
+        self.write_to_file()
+
+        self.mutex.release()
+    pass
 
     def write_to_file(self):
 

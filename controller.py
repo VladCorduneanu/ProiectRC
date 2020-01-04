@@ -47,7 +47,6 @@ class StateController:
     # transfer function -> start transfer from sender interface
     def transfer_function(self):
         logger.Logger.write("Transfer function triggered")
-
         #   text to transfer
         packList: [] = functions.getPackagesToSend()
 
@@ -99,7 +98,7 @@ class StateController:
                 pachet.decode_message(data)
 
                 # check if it is ACKNOWLEDGE TYPE for connected: Type + Window size
-                if pachet.type == 5:
+                if pachet.type == 5 and pachet.frame_number == 0:
                     # update the timer -> ack before expiring the timer will always reset it: responsive app
                     lastResponse = datetime.datetime.now()
 

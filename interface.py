@@ -24,6 +24,7 @@ class InterfaceController:
         self.state_label_text = None
         self.state = ""
         self.working_thread = None
+        self.working = False
 
         pass
 
@@ -96,9 +97,11 @@ class InterfaceController:
     # the method that trigger the transfer button -> transfer button callback
     @staticmethod
     def transfer_file():
-        InterfaceController.get_instance().working_thread = threading.\
-            Thread(target=InterfaceController.get_instance().transfer_file_thread)
-        InterfaceController.get_instance().working_thread.start()
+        if not InterfaceController.get_instance().working:
+            InterfaceController.get_instance().working = True
+            InterfaceController.get_instance().working_thread = threading.\
+                Thread(target=InterfaceController.get_instance().transfer_file_thread)
+            InterfaceController.get_instance().working_thread.start()
     pass
 
     @staticmethod
@@ -110,6 +113,8 @@ class InterfaceController:
         else:
             print("The state doesn't exist")
             return
+        logger.Logger.write("Killed thread: ")
+        InterfaceController.get_instance().working = False
 
     pass
 
