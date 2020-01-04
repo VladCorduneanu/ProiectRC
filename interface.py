@@ -14,7 +14,11 @@ class InterfaceController:
         self.text_box = None
         self.master = None
         self.frame = None
-
+        self.S = None
+        self.T = None
+        self.timeoutScale = None
+        self.windowSizeScale = None
+        self.lostPercentScale = None
         # Variables
         self.state_label_text = None
         self.state = ""
@@ -58,6 +62,18 @@ class InterfaceController:
                                         command=self.file_dialog)
             self.browse_button.place(x=548, y=36)
 
+            # scale for timeout
+            self.timeoutScale = Scale(self.frame,from_=0, to=5, resolution=1, orient=HORIZONTAL, label="timeout")
+            self.timeoutScale.place(x=230, y=70)
+        else:
+            self.windowSizeScale = Scale(self.frame, from_=1, to=5, resolution=1, orient=HORIZONTAL, label="window size")
+            self.windowSizeScale.place(x=150, y=70)
+
+            self.lostPercentScale = Scale(self.frame, from_=0, to=100, resolution=1, orient=HORIZONTAL, label="lost percent")
+            self.lostPercentScale.place(x=360, y=70)
+        # text label
+        self.T = Text(self.frame,height=25, width=70)
+        self.T.place(x=18, y=130)
         # exit call
         self.master.protocol("WM_DELETE_WINDOW", self.close_me)
 
@@ -85,6 +101,7 @@ class InterfaceController:
         else:
             print("The state doesn't exist")
             return
+
     pass
 
     # setter for state
@@ -106,3 +123,12 @@ class InterfaceController:
         self.master.destroy()
 
     pass
+
+    def get_timeout(self):
+        return self.timeoutScale.get()
+
+    def get_window(self):
+        return self.windowSizeScale.get()
+
+    def get_percent(self):
+        return self.lostPercentScale.get()

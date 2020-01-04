@@ -211,7 +211,7 @@ class StateController:
 
         # the end state was triggered
         while isFinished == 1:
-            # create the end package
+            # create and send the end package
             endPack = self.frameFactory.getPackage(FrameTypes.LAST.value, None, None, None, None)
             self.transmit_buffer.put(endPack.encode_message())
             logger.Logger.write("Send END package: ")
