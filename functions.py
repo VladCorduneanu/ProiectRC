@@ -15,8 +15,8 @@ def data_write(data):
 
 
 # generate processing time function
-def genTp():
-    return random.random() * 6
+def genTp(scale):
+    return random.random() * scale
 
 
 # generating window size function

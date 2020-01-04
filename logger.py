@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import interface
 import threading
+import time
 import tkinter as tk
 
 state = ""
@@ -44,6 +45,9 @@ class Logger:
         dt_string = "[" + dt_string + "]  "
         self.text = self.text + "\n" + dt_string + received_text
         self.write_to_file()
+
+        # Give time for Tk Inter to write log
+        time.sleep(0)
 
         self.mutex.release()
     pass

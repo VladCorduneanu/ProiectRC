@@ -1,4 +1,5 @@
 import logger
+import interface
 import enum
 import socket
 import queue
@@ -47,6 +48,10 @@ class StateController:
     # transfer function -> start transfer from sender interface
     def transfer_function(self):
         logger.Logger.write("Transfer function triggered")
+
+        timeoutValue = interface.InterfaceController.get_instance().get_timeout()
+
+        logger.Logger.write("Timeout value : " + str(timeoutValue))
         #   text to transfer
         packList: [] = functions.getPackagesToSend()
 
@@ -81,7 +86,7 @@ class StateController:
         while isConnecting == 1:
 
             # check if the timer for resend package was not triggered
-            if (datetime.datetime.now() - lastResponse).total_seconds() > 5:
+            if (datetime.datetime.now() - lastResponse).total_seconds() > timeoutValue:
                 self.transmit_buffer.put(connpack.encode_message())
                 logger.Logger.write("Resending connection pack")
                 # reset the timer
@@ -196,7 +201,7 @@ class StateController:
                 else:
 
                     # if the sender has not any ack from receiver -> trigger the timer to resend
-                    if (datetime.datetime.now() - lastResponse).total_seconds() > 15:
+                    if (datetime.datetime.now() - lastResponse).total_seconds() > timeoutValue:
                         # reset timer
                         lastResponse = datetime.datetime.now()
                         logger.Logger.write("TIMEOUT triggered -> resend packages")
@@ -224,6 +229,10 @@ class StateController:
     def receive_function(self):
         logger.Logger.write("Receive function triggered ")
 
+        processingScale = interface.InterfaceController.get_instance().get_processingTime()
+        windowDim = interface.InterfaceController.get_instance().get_window()
+
+
         # initialize the list with all decoded messages
         receivedPackList = []
 
@@ -239,9 +248,6 @@ class StateController:
 
         # initialize the number of package received
         currentPack = 1
-
-        # initialize the dimension of window
-        windowDim = 5
 
         # loop state for connecting to sender
         while isListening == 1:
@@ -303,8 +309,8 @@ class StateController:
                         currentTime = datetime.datetime.now()
 
                         # generate processing time
-                        processTime = functions.genTp()
-                        logger.Logger.write("Process the package")
+                        processTime = functions.genTp(processingScale)
+                        logger.Logger.write("Process the package : " + str(processTime))
 
                         # processing
                         time.sleep(processTime)
@@ -402,7 +408,11 @@ class StateController:
                 MESSAGE: str = self.transmit_buffer.get()
 
                 # Simulating the loss of packages argument being the chance of loss in %
-                lost = functions.getLost(10)
+                if self.state == States.RECEIVER:
+                    percent = interface.InterfaceController.get_instance().get_percentReceiver()
+                else:
+                    percent = interface.InterfaceController.get_instance().get_percentSender()
+                lost = functions.getLost(percent)
 
                 if not lost:
                     # Sending the package
