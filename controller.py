@@ -10,6 +10,7 @@ import datetime
 import functions
 import FrameFactory
 
+closeApp = False
 
 class States(enum.Enum):
     SENDER = "sender"
@@ -51,6 +52,9 @@ class StateController:
 
         timeoutValue = interface.InterfaceController.get_instance().get_timeout()
 
+        # Timeouts counter used to determine if we should abort
+        timeoutCounter = 0
+
         logger.Logger.write("Timeout value : " + str(timeoutValue))
         #   text to transfer
         packList: [] = functions.getPackagesToSend()
@@ -91,6 +95,10 @@ class StateController:
                 logger.Logger.write("Resending connection pack")
                 # reset the timer
                 lastResponse = datetime.datetime.now()
+                timeoutCounter = timeoutCounter + 1
+                if timeoutCounter > 10 or closeApp:
+                    logger.Logger.write("No Response or Closed, ABORT TRANSMISSION")
+                    return
 
             # searching in the receive buffer of SENDER if the connection was established
             if not self.receive_buffer.empty():
@@ -106,6 +114,7 @@ class StateController:
                 if pachet.type == 5 and pachet.frame_number == 0:
                     # update the timer -> ack before expiring the timer will always reset it: responsive app
                     lastResponse = datetime.datetime.now()
+                    timeoutCounter = 0
 
                     # setting transfer window size
                     windowDim = pachet.window_size
@@ -150,6 +159,7 @@ class StateController:
 
                     # reset the timer
                     lastResponse = datetime.datetime.now()
+                    timeoutCounter = 0
 
                     # create and decode the message
                     data = self.receive_buffer.get()
@@ -179,6 +189,7 @@ class StateController:
 
                     # reset timer
                     lastResponse = datetime.datetime.now()
+                    timeoutCounter = 0
 
                     # create and decode the message
                     data = self.receive_buffer.get()
@@ -204,6 +215,10 @@ class StateController:
                     if (datetime.datetime.now() - lastResponse).total_seconds() > timeoutValue:
                         # reset timer
                         lastResponse = datetime.datetime.now()
+                        timeoutCounter = timeoutCounter + 1
+                        if timeoutCounter > 10 or closeApp:
+                            logger.Logger.write("No Response or Closed, ABORT TRANSMISSION")
+                            return
                         logger.Logger.write("TIMEOUT triggered -> resend packages")
                         # change the states
                         isWaiting = 0  # stop waiting state
@@ -229,6 +244,9 @@ class StateController:
     def receive_function(self):
         logger.Logger.write("Receive function triggered ")
 
+        # When we last received a message
+        lastResponse = datetime.datetime.now()
+
         processingScale = interface.InterfaceController.get_instance().get_processingTime()
         windowDim = interface.InterfaceController.get_instance().get_window()
 
@@ -252,8 +270,15 @@ class StateController:
         # loop state for connecting to sender
         while isListening == 1:
 
+            if (datetime.datetime.now() - lastResponse).total_seconds() > 10 or closeApp:
+                logger.Logger.write("10 sec without messages or Closed, ABORT")
+                return
+
+
             # check if there are any packages in receive buffer of RECEIVER
             if not self.receive_buffer.empty():
+                # reset lastResponse time
+                lastResponse = datetime.datetime.now()
 
                 # create and decode the package
                 data = self.receive_buffer.get()
@@ -282,12 +307,17 @@ class StateController:
 
         # loop state for receiving data file messages
         while isReceving == 1:
+            if (datetime.datetime.now() - lastResponse).total_seconds() > 10 and self.receive_buffer.empty() or closeApp:
+                logger.Logger.write("10 sec without messages or Closed, ABORT")
+                return
 
             # waiting the information package
             if isWaiting == 1:
 
                 # check if it something in receive buffer of RECEIVER
                 if not self.receive_buffer.empty():
+                    # reset lastResponse time
+                    lastResponse = datetime.datetime.now()
 
                     # create amd decode the message
                     data = self.receive_buffer.get()

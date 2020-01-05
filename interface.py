@@ -132,6 +132,7 @@ class InterfaceController:
             return
         logger.Logger.write("Killed thread: ")
         InterfaceController.get_instance().working = False
+        InterfaceController.get_instance().working_thread = None
         InterfaceController.get_instance().transfer_button.config(state=ACTIVE)
 
     pass
@@ -152,7 +153,8 @@ class InterfaceController:
     # method that close the app from interface -> quit callback
     def close_me(self):
         if self.working_thread is not None:
-            self.working_thread.join()
+            controller.closeApp = True
+            return
         controller.StateController.get_instance().close_app()
         self.master.destroy()
 
