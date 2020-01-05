@@ -1,3 +1,8 @@
+# TCP Flow Control with Sliding Window
+# Version 1.0
+# Collaborators : Vlad Corduneanu and Alexandru Baciu
+# Date : 05.01.2020 7.12 PM
+
 from controller import StateController
 from interface import InterfaceController
 import logger
