@@ -48,6 +48,10 @@ class StateController:
 
     # transfer function -> start transfer from sender interface
     def transfer_function(self):
+        # Reset Flag for closing connection
+        global closeApp
+        closeApp = False
+
         logger.Logger.write("Transfer function triggered")
 
         timeoutValue = interface.InterfaceController.get_instance().get_timeout()
@@ -242,6 +246,10 @@ class StateController:
 
     # transfer function -> start transfer from receiver interface
     def receive_function(self):
+        # Reset Flag for closing connection
+        global closeApp
+        closeApp = False
+
         logger.Logger.write("Receive function triggered ")
 
         # When we last received a message
